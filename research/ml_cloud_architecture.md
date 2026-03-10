@@ -32,50 +32,6 @@ The ML layer therefore performs three main functions:
 
 \## Post-MQTT System Architecture
 
-flowchart TD
-
-
-
-A\[Edge Device<br>Raspberry Pi + RTL-SDR] --> B\[MQTT Broker<br>HiveMQ Cloud]
-
-
-
-B --> C\[Cloud Subscriber<br>FastAPI Service]
-
-
-
-C --> D\[Data Preprocessing<br>Spectrogram Normalization]
-
-
-
-D --> E\[Autoencoder Model<br>PyTorch Inference]
-
-
-
-E --> F\[Reconstruction Error<br>MSE Calculation]
-
-
-
-F --> G{Threshold Check<br>μ + 3σ}
-
-
-
-G -->|Normal| H\[Store Baseline Metrics]
-
-
-
-G -->|Anomaly| I\[Generate Alert]
-
-
-
-I --> J\[Dashboard Visualization<br>React + Vercel]
-
-
-
-I --> K\[Edge Alert System<br>OLED / LED]
-
-
-
 Once RF data is captured and processed on the edge device, the resulting spectrogram features are transmitted to the cloud using MQTT. The ML inference pipeline operates after the MQTT broker stage.
 
 
