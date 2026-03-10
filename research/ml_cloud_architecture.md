@@ -30,6 +30,9 @@ The ML layer therefore performs three main functions:
 
 
 
+
+
+
 \## Post-MQTT System Architecture
 
 Once RF data is captured and processed on the edge device, the resulting spectrogram features are transmitted to the cloud using MQTT. The ML inference pipeline operates after the MQTT broker stage.
@@ -78,6 +81,9 @@ The cloud inference service is responsible for receiving incoming RF features, r
 
 
 
+
+
+
 \## Data Flow Pipeline
 
 
@@ -108,6 +114,9 @@ The ML data flow pipeline operates in the following sequence:
 
 
 
+
+
+
 \## RF Spectrogram Representation
 
 
@@ -127,6 +136,9 @@ Channels: 1 (grayscale)
 
 
 Spectrograms transform RF signals into a time-frequency representation that can be processed effectively using convolutional neural networks.
+
+
+
 
 
 
@@ -157,6 +169,9 @@ Spectrogram image with dimensions 1024 by 64
 Output:
 
 Reconstructed spectrogram and reconstruction error score
+
+
+
 
 
 
@@ -214,6 +229,9 @@ Dense layer producing a 64-dimensional latent vector
 
 
 
+
+
+
 \## Latent Space Representation
 
 
@@ -239,6 +257,9 @@ Latent vector size:
 
 
 This compression forces the model to retain only the most meaningful RF characteristics, effectively producing a compact RF fingerprint.
+
+
+
 
 
 
@@ -294,6 +315,9 @@ Reconstructed spectrogram with dimensions 1024 by 64
 
 
 
+
+
+
 \## Training Methodology
 
 
@@ -336,6 +360,9 @@ Learning rate: 0.001
 
 
 
+
+
+
 \## Reconstruction Error Based Anomaly Detection
 
 
@@ -349,6 +376,9 @@ The anomaly score is defined as the Mean Squared Error between the input spectro
 
 
 Normal signals produce low reconstruction error because the model has learned their structure. Unknown or abnormal signals produce higher reconstruction error.
+
+
+
 
 
 
@@ -371,6 +401,9 @@ Threshold = μ + 3σ
 
 
 If the reconstruction error of an incoming spectrogram exceeds this threshold, the signal is classified as anomalous.
+
+
+
 
 
 
@@ -408,6 +441,9 @@ Target inference latency for the system is less than 150 milliseconds.
 
 
 
+
+
+
 \## Explainability Layer
 
 
@@ -434,6 +470,9 @@ These visualizations help analysts understand why the system flagged a particula
 
 
 
+
+
+
 \## Key Insights
 
 
@@ -444,11 +483,17 @@ Unsupervised learning eliminates the need for labeled attack data, making the sy
 
 
 
+
+
+
 \## Implementation Recommendations
 
 
 
 Future improvements to the system may include model quantization to accelerate inference performance, adaptive thresholding to account for dynamic RF environments, temporal anomaly correlation across multiple spectrogram frames, and persistent storage of anomaly events for long-term RF security analysis.
+
+
+
 
 
 
