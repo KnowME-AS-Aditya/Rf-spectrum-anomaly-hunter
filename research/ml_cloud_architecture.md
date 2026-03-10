@@ -168,16 +168,18 @@ Spectrograms transform RF signals into a time-frequency representation that can 
 
 \## Autoencoder Model Architecture
 ```mermaid
-flowchart LR
+flowchart TD
 
-A[Input Spectrogram<br>1024 × 64] --> B[Conv2D Layer<br>1 → 32]
-B --> C[ReLU Activation<br>MaxPool]
+A[Input Spectrogram<br>1024 × 64]
+
+A --> B[Conv2D Layer<br>1 → 32]
+B --> C[ReLU Activation + MaxPool]
 
 C --> D[Conv2D Layer<br>32 → 64]
-D --> E[ReLU Activation<br>MaxPool]
+D --> E[ReLU Activation + MaxPool]
 
 E --> F[Conv2D Layer<br>64 → 128]
-F --> G[ReLU Activation<br>MaxPool]
+F --> G[ReLU Activation + MaxPool]
 
 G --> H[Flatten Layer]
 
@@ -188,12 +190,10 @@ I --> J[Dense Expansion]
 J --> K[Reshape Layer]
 
 K --> L[ConvTranspose2D<br>128 → 64]
-
-L --> M[Upsampling]
+L --> M[Upsample]
 
 M --> N[ConvTranspose2D<br>64 → 32]
-
-N --> O[Upsampling]
+N --> O[Upsample]
 
 O --> P[ConvTranspose2D<br>32 → 1]
 
