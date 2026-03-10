@@ -167,7 +167,38 @@ Spectrograms transform RF signals into a time-frequency representation that can 
 
 
 \## Autoencoder Model Architecture
+```mermaid
+flowchart LR
 
+A[Input Spectrogram<br>1024 × 64] --> B[Conv2D Layer<br>1 → 32]
+B --> C[ReLU Activation<br>MaxPool]
+
+C --> D[Conv2D Layer<br>32 → 64]
+D --> E[ReLU Activation<br>MaxPool]
+
+E --> F[Conv2D Layer<br>64 → 128]
+F --> G[ReLU Activation<br>MaxPool]
+
+G --> H[Flatten Layer]
+
+H --> I[Dense Layer<br>Latent Vector<br>64 Features]
+
+I --> J[Dense Expansion]
+
+J --> K[Reshape Layer]
+
+K --> L[ConvTranspose2D<br>128 → 64]
+
+L --> M[Upsampling]
+
+M --> N[ConvTranspose2D<br>64 → 32]
+
+N --> O[Upsampling]
+
+O --> P[ConvTranspose2D<br>32 → 1]
+
+P --> Q[Reconstructed Spectrogram<br>1024 × 64]
+```
 
 
 The anomaly detection model is implemented as a Convolutional Autoencoder. Autoencoders are neural networks designed to learn a compressed representation of input data and reconstruct the original input from that representation.
