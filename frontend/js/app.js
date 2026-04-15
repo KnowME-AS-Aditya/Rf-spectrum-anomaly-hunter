@@ -143,31 +143,60 @@
     function renderEventLog() {
         const tbody = document.getElementById('event-table-body');
         const events = MockData.getEventLog();
+        const fragment = document.createDocumentFragment();
 
         // Only update if we have new data
-        const rows = events.slice(0, 20).map((event, index) => {
-            const statusClass = event.is_anomaly ? 'event-row--anomaly' : '';
-            const newClass = index === 0 ? 'event-row--new' : '';
-            const statusBadge = event.is_anomaly
-                ? '<span class="status-badge status-badge--anomaly">🔴 ANOMALY</span>'
-                : '<span class="status-badge status-badge--normal">🟢 NORMAL</span>';
+        events.slice(0, 20).forEach((event, index) => {
+            const row = document.createElement('tr');
+            if (event.is_anomaly) {
+                row.classList.add('event-row--anomaly');
+            }
+            if (index === 0) {
+                row.classList.add('event-row--new');
+            }
+
+            const timeCell = document.createElement('td');
+            timeCell.textContent = event.time_display;
+            row.appendChild(timeCell);
+
+            const frequencyCell = document.createElement('td');
+            frequencyCell.style.fontFamily = 'var(--font-mono)';
+            frequencyCell.textContent = event.frequency_mhz.toFixed(2);
+            row.appendChild(frequencyCell);
+
+            const errorCell = document.createElement('td');
+            errorCell.style.fontFamily = 'var(--font-mono)';
+            errorCell.textContent = event.reconstruction_error.toFixed(3);
+            row.appendChild(errorCell);
 
             const ratio = event.anomaly_score_ratio;
-            const ratioColorStyle = ratio > 2 ? 'color: var(--red);' :
-                                    ratio > 0.8 ? 'color: var(--amber);' : '';
+            const ratioCell = document.createElement('td');
+            ratioCell.style.fontFamily = 'var(--font-mono)';
+            if (ratio > 2) {
+                ratioCell.style.color = 'var(--red)';
+            } else if (ratio > 0.8) {
+                ratioCell.style.color = 'var(--amber)';
+            }
+            ratioCell.textContent = `${ratio.toFixed(2)}×`;
+            row.appendChild(ratioCell);
 
-            return `<tr class="${statusClass} ${newClass}">
-                <td>${event.time_display}</td>
-                <td style="font-family: var(--font-mono)">${event.frequency_mhz.toFixed(2)}</td>
-                <td style="font-family: var(--font-mono)">${event.reconstruction_error.toFixed(3)}</td>
-                <td style="font-family: var(--font-mono); ${ratioColorStyle}">${ratio.toFixed(2)}×</td>
-                <td>${event.device_id}</td>
-                <td>${statusBadge}</td>
-            </tr>`;
-        }).join('');
+            const deviceCell = document.createElement('td');
+            deviceCell.textContent = event.device_id;
+            row.appendChild(deviceCell);
 
-        tbody.innerHTML = rows;
+            const statusCell = document.createElement('td');
+            const statusBadge = document.createElement('span');
+            statusBadge.className = event.is_anomaly
+                ? 'status-badge status-badge--anomaly'
+                : 'status-badge status-badge--normal';
+            statusBadge.textContent = event.is_anomaly ? '🔴 ANOMALY' : '🟢 NORMAL';
+            statusCell.appendChild(statusBadge);
+            row.appendChild(statusCell);
 
+            fragment.appendChild(row);
+        });
+
+        tbody.replaceChildren(fragment);
         // Update event count
         document.getElementById('event-count').textContent = `${events.length} events`;
     }
