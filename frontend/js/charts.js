@@ -72,7 +72,7 @@ const Charts = (() => {
             for (let i = 0; i < data.length; i += step) {
                 const x = padding.left + (i / (data.length - 1 || 1)) * plotW;
                 const time = data[i].time;
-                const label = time.toTimeString().substr(0, 8);
+                const label = time.toTimeString().slice(0, 8);
                 ctx.fillStyle = '#444';
                 ctx.font = '9px "IBM Plex Mono", monospace';
                 ctx.textAlign = 'center';
