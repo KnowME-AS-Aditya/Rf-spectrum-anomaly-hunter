@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RF Spectrum Anomaly Hunter — Edge-native RF spectrum anomaly detection dashboard using RTL-SDR and unsupervised deep learning.">
+    <title>RF Spectrum Anomaly Hunter — Live Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- CRT Scanline Overlay -->
+    <div class="scanline-overlay" aria-hidden="true"></div>
+
+    <!-- ① HEADER BAR -->
+    <header class="header" id="header">
+        <div class="header__left">
+            <div class="header__logo">
+                <span class="header__logo-icon">◈</span>
+                <h1 class="header__title">RF SPECTRUM ANOMALY HUNTER</h1>
+            </div>
+            <span class="header__version">v1.0.0-edge</span>
+        </div>
+        <div class="header__right">
+            <div class="header__status" id="status-live">
+                <span class="status-dot status-dot--live"></span>
+                <span>LIVE</span>
+            </div>
+            <div class="header__status" id="status-mqtt">
+                <span class="status-dot status-dot--connected" id="mqtt-dot"></span>
+                <span>MQTT <span id="mqtt-status-text">CONNECTED</span></span>
+            </div>
+            <div class="header__status" id="status-model">
+                <span class="status-dot status-dot--connected"></span>
+                <span>MODEL LOADED</span>
+            </div>
+            <div class="header__clock" id="clock">00:00:00</div>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <!-- ② KPI CARDS ROW -->
+        <section class="kpi-row" id="kpi-row" aria-label="Key Performance Indicators">
+            <div class="kpi-card" id="kpi-scans">
+                <div class="kpi-card__label">TOTAL SCANS</div>
+                <div class="kpi-card__value" id="kpi-scans-value">0</div>
+                <div class="kpi-card__trend kpi-card__trend--up" id="kpi-scans-trend">
+                    <span class="trend-arrow">▲</span> <span id="kpi-scans-rate">+0/min</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-anomalies">
+                <div class="kpi-card__label">ANOMALIES DETECTED</div>
+                <div class="kpi-card__value kpi-card__value--alert" id="kpi-anomalies-value">0</div>
+                <div class="kpi-card__trend" id="kpi-anomalies-trend">
+                    <span>TODAY</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-uptime">
+                <div class="kpi-card__label">SYSTEM UPTIME</div>
+                <div class="kpi-card__value kpi-card__value--good" id="kpi-uptime-value">99.2%</div>
+                <div class="kpi-card__trend kpi-card__trend--up">
+                    <span class="trend-arrow">▲</span> <span>STABLE</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-latency">
+                <div class="kpi-card__label">AVG LATENCY</div>
+                <div class="kpi-card__value" id="kpi-latency-value">0ms</div>
+                <div class="kpi-card__trend" id="kpi-latency-trend">
+                    <span>E2E PIPELINE</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN CONTENT: Waterfall + Alert Panel -->
+        <section class="main-content" aria-label="Primary Monitoring">
+            <!-- ③ SPECTRUM WATERFALL -->
+            <div class="panel panel--waterfall" id="panel-waterfall">
+                <div class="panel__header">
+                    <h2 class="panel__title">
+                        <span class="panel__title-icon">◆</span> LIVE SPECTRUM WATERFALL
+                    </h2>
+                    <div class="panel__controls">
+                        <span class="panel__badge">433 MHz ISM</span>
+                        <span class="panel__badge panel__badge--dim" id="waterfall-fps">0 FPS</span>
+                    </div>
+                </div>
+                <div class="panel__body waterfall-container">
+                    <div class="waterfall-axis waterfall-axis--y">
+                        <span>TIME ▼</span>
+                    </div>
+                    <div class="waterfall-canvas-wrapper">
+                        <canvas id="waterfall-canvas" width="800" height="300"></canvas>
+                        <div class="waterfall-axis waterfall-axis--x">
+                            <span>433.0</span>
+                            <span>433.25</span>
+                            <span>433.5</span>
+                            <span>433.75</span>
+                            <span>434.0 MHz</span>
+                        </div>
+                    </div>
+                    <!-- Color legend -->
+                    <div class="waterfall-legend">
+                        <span class="legend-label">SIGNAL:</span>
+                        <div class="legend-gradient"></div>
+                        <div class="legend-labels">
+                            <span>NOISE</span>
+                            <span>NORMAL</span>
+                            <span>STRONG</span>
+                            <span>ANOMALY</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ④ ALERT PANEL -->
+            <div class="panel panel--alert" id="panel-alert">
+                <div class="panel__header">
+                    <h2 class="panel__title">
+                        <span class="panel__title-icon">◆</span> ALERT PANEL
+                    </h2>
+                    <div class="panel__controls">
+                        <span class="panel__badge panel__badge--idle" id="alert-status-badge">MONITORING</span>
+                    </div>
+                </div>
+                <div class="panel__body" id="alert-body">
+                    <!-- Idle State -->
+                    <div class="alert-idle" id="alert-idle">
+                        <div class="alert-idle__icon">◈</div>
+                        <div class="alert-idle__text">NO ACTIVE ANOMALIES</div>
+                        <div class="alert-idle__sub">System monitoring 433 MHz band</div>
+                    </div>
+
+                    <!-- Active Alert State (hidden by default) -->
+                    <div class="alert-active" id="alert-active" style="display: none;">
+                        <div class="alert-active__header">
+                            <span class="alert-flash">🚨</span>
+                            <span class="alert-active__title">ANOMALY DETECTED</span>
+                            <span class="alert-active__time" id="alert-time">--:--:--</span>
+                        </div>
+                        <div class="alert-active__details">
+                            <div class="alert-detail">
+                                <span class="alert-detail__label">FREQUENCY</span>
+                                <span class="alert-detail__value" id="alert-freq">—</span>
+                            </div>
+                            <div class="alert-detail">
+                                <span class="alert-detail__label">ANOMALY SCORE</span>
+                                <span class="alert-detail__value" id="alert-score">—</span>
+                            </div>
+                            <div class="alert-detail">
+                                <span class="alert-detail__label">CONFIDENCE</span>
+                                <div class="alert-confidence-bar">
+                                    <div class="alert-confidence-bar__fill" id="alert-confidence-fill"></div>
+                                    <span class="alert-confidence-bar__text" id="alert-confidence-text">0%</span>
+                                </div>
+                            </div>
+                            <div class="alert-detail">
+                                <span class="alert-detail__label">DEVICE</span>
+                                <span class="alert-detail__value alert-detail__value--unknown" id="alert-device">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Anomalous Frequency Bands -->
+                        <div class="alert-bands" id="alert-bands">
+                            <div class="alert-bands__title">ANOMALOUS FREQUENCY BANDS</div>
+                            <div class="alert-bands__list" id="alert-bands-list"></div>
+                        </div>
+
+                        <!-- Grad-CAM Heatmap -->
+                        <div class="alert-gradcam">
+                            <div class="alert-gradcam__title">GRAD-CAM ATTRIBUTION</div>
+                            <canvas id="gradcam-canvas" width="200" height="200"></canvas>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="alert-actions">
+                            <button class="btn btn--dismiss" id="btn-dismiss" onclick="dismissAlert()">DISMISS</button>
+                            <button class="btn btn--export" id="btn-export" onclick="exportForensics()">EXPORT</button>
+                            <button class="btn btn--false-positive" id="btn-fp" onclick="markFalsePositive()">FALSE +</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ⑤ ANOMALY SCORE TIMELINE -->
+        <section class="panel panel--timeline" id="panel-timeline" aria-label="Anomaly Score Timeline">
+            <div class="panel__header">
+                <h2 class="panel__title">
+                    <span class="panel__title-icon">◆</span> ANOMALY SCORE TIMELINE
+                </h2>
+                <div class="panel__controls">
+                    <span class="panel__badge panel__badge--dim">RECONSTRUCTION ERROR</span>
+                    <span class="panel__badge panel__badge--threshold" id="threshold-badge">μ+3σ = 0.33</span>
+                </div>
+            </div>
+            <div class="panel__body">
+                <canvas id="timeline-canvas" width="1200" height="180"></canvas>
+            </div>
+        </section>
+
+        <!-- BOTTOM ROW: Event Log + System Health -->
+        <section class="bottom-content" aria-label="Event Log and System Health">
+            <!-- ⑥ EVENT LOG -->
+            <div class="panel panel--eventlog" id="panel-eventlog">
+                <div class="panel__header">
+                    <h2 class="panel__title">
+                        <span class="panel__title-icon">◆</span> ANOMALY EVENT LOG
+                    </h2>
+                    <div class="panel__controls">
+                        <span class="panel__badge panel__badge--dim" id="event-count">0 events</span>
+                    </div>
+                </div>
+                <div class="panel__body">
+                    <div class="table-wrapper">
+                        <table class="event-table" id="event-table">
+                            <thead>
+                                <tr>
+                                    <th>TIMESTAMP</th>
+                                    <th>FREQ (MHz)</th>
+                                    <th>MSE SCORE</th>
+                                    <th>RATIO</th>
+                                    <th>DEVICE</th>
+                                    <th>STATUS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="event-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑦ SYSTEM HEALTH -->
+            <div class="panel panel--health" id="panel-health">
+                <div class="panel__header">
+                    <h2 class="panel__title">
+                        <span class="panel__title-icon">◆</span> EDGE TELEMETRY
+                    </h2>
+                    <div class="panel__controls">
+                        <span class="panel__badge panel__badge--dim">RPi Zero 2W</span>
+                    </div>
+                </div>
+                <div class="panel__body">
+                    <div class="health-section">
+                        <div class="health-metric">
+                            <div class="health-metric__header">
+                                <span class="health-metric__label">CPU LOAD</span>
+                                <span class="health-metric__value" id="health-cpu">0%</span>
+                            </div>
+                            <div class="health-bar">
+                                <div class="health-bar__fill" id="health-cpu-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="health-metric">
+                            <div class="health-metric__header">
+                                <span class="health-metric__label">RAM USAGE</span>
+                                <span class="health-metric__value" id="health-ram">0 / 512 MB</span>
+                            </div>
+                            <div class="health-bar">
+                                <div class="health-bar__fill" id="health-ram-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="health-metric">
+                            <div class="health-metric__header">
+                                <span class="health-metric__label">CORE TEMP</span>
+                                <span class="health-metric__value" id="health-temp">0°C</span>
+                            </div>
+                            <div class="health-bar">
+                                <div class="health-bar__fill health-bar__fill--temp" id="health-temp-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="health-divider"></div>
+
+                    <div class="health-section">
+                        <div class="health-stat">
+                            <span class="status-dot status-dot--connected" id="health-mqtt-dot"></span>
+                            <span class="health-stat__label">MQTT BROKER</span>
+                            <span class="health-stat__value" id="health-mqtt-latency">— ms</span>
+                        </div>
+                        <div class="health-stat">
+                            <span class="status-dot status-dot--connected"></span>
+                            <span class="health-stat__label">CLOUD INFERENCE</span>
+                            <span class="health-stat__value" id="health-inference-time">— ms</span>
+                        </div>
+                        <div class="health-stat">
+                            <span class="status-dot status-dot--connected"></span>
+                            <span class="health-stat__label">MODEL VERSION</span>
+                            <span class="health-stat__value" id="health-model-ver">v1.2</span>
+                        </div>
+                        <div class="health-stat">
+                            <span class="health-stat__label">LAST RETRAIN</span>
+                            <span class="health-stat__value" id="health-retrain">—</span>
+                        </div>
+                    </div>
+
+                    <div class="health-divider"></div>
+
+                    <div class="health-section">
+                        <div class="health-stat">
+                            <span class="health-stat__label">FFT PROCESSING</span>
+                            <span class="health-stat__value" id="health-fft">— ms</span>
+                        </div>
+                        <div class="health-stat">
+                            <span class="health-stat__label">SPECTROGRAM GEN</span>
+                            <span class="health-stat__value" id="health-specgen">— ms</span>
+                        </div>
+                        <div class="health-stat">
+                            <span class="health-stat__label">24h STABILITY</span>
+                            <span class="health-stat__value health-stat__value--good" id="health-stability">STABLE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <span>RF SPECTRUM ANOMALY HUNTER — CAPSTONE 2026</span>
+        <span>CONV-AE + GRAD-CAM | RTL-SDR + RPi ZERO 2W</span>
+        <span id="footer-uptime">UPTIME: 00:00:00</span>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/mock-data.js"></script>
+    <script src="js/waterfall.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
