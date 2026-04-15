@@ -153,14 +153,14 @@
                 : '<span class="status-badge status-badge--normal">🟢 NORMAL</span>';
 
             const ratio = event.anomaly_score_ratio;
-            const ratioClass = ratio > 2 ? 'style="color: var(--red)"' :
-                              ratio > 0.8 ? 'style="color: var(--amber)"' : '';
+            const ratioColorStyle = ratio > 2 ? 'color: var(--red);' :
+                                    ratio > 0.8 ? 'color: var(--amber);' : '';
 
             return `<tr class="${statusClass} ${newClass}">
                 <td>${event.time_display}</td>
                 <td style="font-family: var(--font-mono)">${event.frequency_mhz.toFixed(2)}</td>
                 <td style="font-family: var(--font-mono)">${event.reconstruction_error.toFixed(3)}</td>
-                <td ${ratioClass} style="font-family: var(--font-mono)">${ratio.toFixed(2)}×</td>
+                <td style="font-family: var(--font-mono); ${ratioColorStyle}">${ratio.toFixed(2)}×</td>
                 <td>${event.device_id}</td>
                 <td>${statusBadge}</td>
             </tr>`;
