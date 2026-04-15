@@ -273,7 +273,7 @@ const MockData = (() => {
                 device_type: isAnomaly ? rogue.type : device.type,
                 scan_number: scanCount - (10 - i) * 15
             };
-            eventLog.push(entry);
+            eventLog.unshift(entry);
             if (isAnomaly) anomalyCount++;
         }
     }
